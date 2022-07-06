@@ -14,7 +14,7 @@ app.use(bodyParser.json(
   {extended: true}
 ));
 
-// SETTING Port to 8080
+// SETTING Port 
 const port = process.env.PORT || 3000 
 
 app.get("/", (req, res)=>{
@@ -45,7 +45,7 @@ app.post('/split-payments/compute',(req, res) => {
         //CONSTRAINT 1, CHECK IF SPLIT INFO IS WITHING 1 AND 20 SPLIT ENTITIES
         if (splitInfo.length > 0 && splitInfo.length <= 20) {
 
-            // filter out the FLAT split type from splitInfo and store in its array
+            // se
             var flatInfo = splitInfo.filter((entry) => {
                 return entry.SplitType == "FLAT";
             });
@@ -62,10 +62,6 @@ app.post('/split-payments/compute',(req, res) => {
 
             // Loop through the entries with FLAT Split type first
             flatInfo.forEach((entry) => {
-                
-                //CONSTRAINT 3 MAKE SURE SPLIT AMOUNT VALUE FOR EACH ENTITY 
-                //IS NOT GREATER THAN TRANSACTION AMOUNT and CONSTRAINT 4, SPLIT 
-                //AMOUNT FOR EACH ENTITY CANNOT BE LESSER THAN ZERO
                 if (entry.SplitValue < payload.Amount && entry.SplitValue>=0) {
                     // Deduct the amount from the balance
                     response.Balance -= entry.SplitValue
@@ -79,7 +75,7 @@ app.post('/split-payments/compute',(req, res) => {
 
             // Loop through the entries with PERCENTAGE Split type second
             percentageInfo.forEach((entry) => {                
-                //CONSTRAINT 4, SPLIT AMOUNT FOR EACH ENTITY CANNOT BE LESSER THAN ZERO
+                
                 if (entry.SplitValue>=0) {
                     //get percentage value
                     var percentageValue = (entry.SplitValue / 100) * response.Balance;
@@ -101,14 +97,14 @@ app.post('/split-payments/compute',(req, res) => {
 
             //Calculate total ratio
             ratioInfo.forEach((entry) => {
-                //CONSTRAINT 4, SPLIT AMOUNT FOR EACH ENTITY CANNOT BE LESSER THAN ZERO
+               
                 if (entry.SplitValue>=0) {
                     totalRatio += entry.SplitValue
                 }
             })
 
             ratioInfo.forEach((entry) => {
-                //CONSTRAINT 4, SPLIT AMOUNT FOR EACH ENTITY CANNOT BE LESSER THAN ZERO
+                
                 if (entry.SplitValue>=0) {
                     //store entry value
                     var value = (entry.SplitValue / totalRatio) * response.Balance;
@@ -125,9 +121,15 @@ app.post('/split-payments/compute',(req, res) => {
             //Update balance finally after doing all ratios
             response.Balance -= ratioValue
 
+            
+            if (response.Balance < 0) {
+              res.send({
+                message: "balance is less than zero"
+            })
+          }
+            res.status(200).send({response });
+        
 
-
-            res.send(response)
         } else {
             res.send({
                 error: true,
@@ -135,6 +137,8 @@ app.post('/split-payments/compute',(req, res) => {
             })
         }
     });
+
+   
 
 app.listen(port, () => {
     console.log(`Server is running! Port: ${port}`)
